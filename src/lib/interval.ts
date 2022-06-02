@@ -6,7 +6,7 @@ type Callback = () => Promise<void>;
 
 interface Interval {
   cb: Callback;
-  interval: ReturnType<typeof setTimeout> | null;
+  interval: ReturnType<typeof setInterval> | null;
   promise: Promise<void> | null;
 }
 

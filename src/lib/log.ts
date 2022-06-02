@@ -19,4 +19,6 @@ const main = debugModule(`${conf.name}:main`);
 
 const server = debugModule(`${conf.name}:server`);
 
-export { config, fhem, flapDevice, flapLogin, flapPosition, flapState, interval, main, server };
+const telnet = debugModule(`${conf.name}:telnet`);
+
+export { config, fhem, flapDevice, flapLogin, flapPosition, flapState, interval, main, server, telnet };

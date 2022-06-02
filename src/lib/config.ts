@@ -1,23 +1,22 @@
 import { Config } from './types/Config.js';
+import { ConfigJson } from './types/ConfigJson.js';
 import debug from 'debug';
 import { fileURLToPath } from 'node:url';
+import lodash from 'lodash';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-const config = {
+const config: Config = {
   fhem: {
     deviceAlexa: '',
     deviceFhem: '',
     deviceOnlineStatus: '',
-    echoLines: 0,
-    host: '',
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    initialLFCR: true,
-    port: '',
-    shellPrompt: 'fhem> ',
-    stripShellPrompt: true,
-    timeout: 10_000,
     updateEnabled: true,
+    telnet: {
+      host: '',
+      port: 0,
+      shellPrompt: 'fhem> ',
+    }
   },
   flap: {
     // Random string
@@ -62,17 +61,10 @@ const custom = (): void => {
     );
     const userConfig = JSON.parse(
       readFileSync(`${baseDirectory}/config.user.json`, 'utf8')
-    ) as Config;
+    ) as ConfigJson;
 
-    config.fhem = {
-      ...config.fhem,
-      ...userConfig.fhem,
-    };
-
-    config.flap = {
-      ...config.flap,
-      ...userConfig.flap,
-    };
+    lodash.merge(config.fhem, userConfig.fhem);
+    lodash.merge(config.flap, userConfig.flap);
 
     log('read user configuration');
   } catch (ex: unknown) {

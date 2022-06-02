@@ -2,87 +2,65 @@ import { config } from './config.js';
 import { FlapState } from './types/FlapState.js';
 import { FlapStatusOnlineState } from './types/FlapDevice.js';
 import { fhem as log } from './log.js';
-import { Telnet } from 'telnet-client';
+import * as telnet from './telnet.js';
 
-let connection: Telnet | null = null;
-
-const connect = async (): Promise<boolean> => {
-  try {
-    if (!config.fhem.updateEnabled) {
-      return false;
-    }
-    connection = new Telnet();
-
-    await connection.connect(config.fhem);
-
-    return true;
-  } catch (ex: unknown) {
-    log(ex);
-    connection = null;
-
-    return false;
-  }
-};
-
-const end = async (): Promise<void> => {
-  try {
-    if (!connection) {
-      return;
-    }
-
-    await connection.end();
-  } catch (ex: unknown) {
-    log(ex);
-  }
-  connection = null;
-};
+const isUpdateActive = (): boolean => config.fhem.updateEnabled;
+const telnetOptions = telnet.createOptions(config.fhem.telnet);
 
 const setOnlineStatus = async (online: FlapStatusOnlineState): Promise<void> => {
-  if (!await connect() || connection === null) {
+  if (isUpdateActive()) {
     return;
   }
 
+  await telnet.open(telnetOptions);
+
   try {
-    const curStatus = (
-      await connection.exec(`{ReadingsVal("${config.fhem.deviceOnlineStatus}","online","0")}`)
-    ).trim() === '1';
+    const res = await telnet.exec(`{ReadingsVal("${config.fhem.deviceOnlineStatus}","online","0")}`);
+
+    if (res === null) {
+      return;
+    }
+
+    const curStatus = res.trim() === '1';
 
     if (curStatus !== online) {
       log(`FHEM online status update ${online ? 'online' : 'offline'}`);
 
-      await connection.exec(`setreading ${config.fhem.deviceOnlineStatus} online ${online ? '1' : '0'}`);
+      await telnet.exec(`setreading ${config.fhem.deviceOnlineStatus} online ${online ? '1' : '0'}`);
     }
   } catch (ex: unknown) {
     log(ex);
     throw new Error('FHEM online status update failed');
   }
 
-  await end();
+  await telnet.end(false);
 };
 
 const setState = async (flap: FlapState): Promise<void> => {
-  if (!await connect() || connection === null) {
+  if (isUpdateActive()) {
     return;
   }
 
+  await telnet.open(telnetOptions);
+
   try {
-    const curFlap = (
-      await connection.exec(`{Value("${config.fhem.deviceAlexa}")}`)
-    ).trim();
+    const curFlap = await telnet.exec(`{Value("${config.fhem.deviceAlexa}")}`);
+
+    if (curFlap === null) {
+      return;
+    }
 
     if (curFlap !== flap) {
       log(`FHEM state update ${flap}`);
-      await connection.exec(`set ${config.fhem.deviceAlexa} ${flap}`);
-      await connection.exec(
-        `setreading ${config.fhem.deviceFhem} skipUpdate 1`
-      );
+      await telnet.exec(`set ${config.fhem.deviceAlexa} ${flap}`);
+      await telnet.exec(`setreading ${config.fhem.deviceFhem} skipUpdate 1`);
     }
   } catch (ex: unknown) {
     log(ex);
-    throw new Error('FHEM update failed');
+    throw new Error('FHEM state update failed');
   }
 
-  await end();
+  await telnet.end(false);
 };
 
 export { setOnlineStatus, setState };
