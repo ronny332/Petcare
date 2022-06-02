@@ -1,0 +1,6 @@
+.vscode
+dist
+node_modules
+config.user.json
+tsconfig.tsbuildinfo
+test.*

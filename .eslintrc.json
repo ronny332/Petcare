@@ -1,0 +1,21 @@
+{
+  "extends": "es/node",
+  "overrides": [
+    {
+      "files": ["src/**/*.ts"],
+      "rules": {
+        "comma-dangle": "off",
+        "@typescript-eslint/naming-convention": [
+          "warn",
+          {
+            "format": ["strictCamelCase", "StrictPascalCase", "UPPER_CASE"],
+            "leadingUnderscore": "allowSingleOrDouble",
+            "selector": "default",
+            "trailingUnderscore": "forbid"
+          }
+        ]
+      }
+    }
+  ],
+  "root": true
+}

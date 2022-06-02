@@ -1,0 +1,10 @@
+[Unit]
+Description=Petcare service
+
+[Service]
+User=fhem
+Type=simple
+ExecStart=/opt/fhem/custom/Petcare/main.sh
+
+[Install]
+WantedBy=multi-user.target
