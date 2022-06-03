@@ -8,6 +8,7 @@ interface ConfigJson {
 interface ConfigJsonFhem {
   deviceAlexa: string;
   deviceFhem: string;
+  deviceStatus: string;
   telnet: TelnetOptions;
   updateEnabled: boolean;
 }

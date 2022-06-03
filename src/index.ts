@@ -7,7 +7,8 @@ import * as server from './lib/server.js';
 
 (async (): Promise<void> => {
   server.start();
-  flapDevice.startUpdating();
+  flapDevice.startUpdatingDeviceStatus();
+  flapDevice.startUpdatingOnlineStatus();
   flapState.startUpdating();
 
   log('started');

@@ -17,11 +17,19 @@ const device: FlapStatusCache = {
   date: null
 };
 
-const intervalOptions: IntervalOptions = {
-  delay: config.flap.delays.status.interval,
+const intervalOptionsDeviceStatus: IntervalOptions = {
+  delay: config.flap.delays.status.device.interval,
+  initialize: true,
+  name: 'device status',
+  retry: config.flap.delays.status.device.retry,
+  skip: false
+};
+
+const intervalOptionsOnlineStatus: IntervalOptions = {
+  delay: config.flap.delays.status.online.interval,
   initialize: true,
   name: 'online status',
-  retry: config.flap.delays.status.retry,
+  retry: config.flap.delays.status.online.retry,
   skip: false
 };
 
@@ -75,8 +83,12 @@ const getDeviceOnlineStatus = async (cached: boolean): Promise<FlapStatusOnlineS
   return status?.status.online ?? null;
 };
 
-const singleUpdate = async (): Promise<void> => fhem.setOnlineStatus(await getDeviceOnlineStatus(true));
+const runUpdateDeviceStatus = async (): Promise<void> => fhem.setDeviceStatus(await getDeviceStatus(true));
 
-const startUpdating = async (): Promise<void> => startInterval(singleUpdate, intervalOptions);
+const runUpdateOnlineStatus = async (): Promise<void> => fhem.setOnlineStatus(await getDeviceOnlineStatus(true));
 
-export { getDeviceOnlineStatus, getDeviceStatus, startUpdating };
+const startUpdatingDeviceStatus = async (): Promise<void> => startInterval(runUpdateDeviceStatus, intervalOptionsDeviceStatus);
+
+const startUpdatingOnlineStatus = async (): Promise<void> => startInterval(runUpdateOnlineStatus, intervalOptionsOnlineStatus);
+
+export { getDeviceOnlineStatus, getDeviceStatus, startUpdatingDeviceStatus, startUpdatingOnlineStatus };

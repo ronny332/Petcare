@@ -10,7 +10,7 @@ interface Config {
 interface Fhem {
   deviceAlexa: string;
   deviceFhem: string;
-  deviceOnlineStatus: string;
+  deviceStatus: string;
   updateEnabled: boolean;
   telnet: TelnetOptions;
 }
@@ -28,7 +28,7 @@ interface Flap {
 
 interface Delays {
   state: State;
-  status: Status;
+  status: StatusTypes;
 }
 
 interface State {
@@ -37,9 +37,14 @@ interface State {
 }
 
 interface Status {
-  cache: number;
   interval: number;
   retry: number;
+}
+
+interface StatusTypes {
+  cache: number;
+  device: Status;
+  online: Status;
 }
 
 interface Urls {

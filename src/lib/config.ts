@@ -10,7 +10,7 @@ const config: Config = {
   fhem: {
     deviceAlexa: '',
     deviceFhem: '',
-    deviceOnlineStatus: '',
+    deviceStatus: '',
     updateEnabled: true,
     telnet: {
       host: '',
@@ -28,8 +28,14 @@ const config: Config = {
       },
       status: {
         cache: 90_000,
-        interval: 60_000,
-        retry: 60_000,
+        device: {
+          interval: 300_000,
+          retry: 300_000
+        },
+        online: {
+          interval: 30_000,
+          retry: 30_000
+        }
       }
     },
     emailAddress: '',

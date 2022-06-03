@@ -13,7 +13,7 @@ interface Command {
 }
 
 const commands: Command[] = [];
-const connection: Telnet = new Telnet();
+let connection: Telnet = new Telnet();
 
 const telnetDefaultOptions: TelnetOptionsDefault = {
   echoLines: 0,
@@ -77,6 +77,7 @@ const end = async (force: boolean): Promise<void> => {
 
       if (force) {
         await connection.destroy();
+        connection = new Telnet();
       }
     } catch (ex: unknown) {
       log(ex);
@@ -120,12 +121,7 @@ const exec = async (cmd: string): Promise<string | null> => {
 const isOpen = (): boolean => {
   const socket = connection.getSocket();
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (socket !== undefined) {
-    return socket.readyState === 'open';
-  }
-
-  return false;
+  return Boolean(socket) && socket.readyState === 'open';
 };
 
 const open = async (opts: TelnetOptions): Promise<void> => {
@@ -138,6 +134,7 @@ const open = async (opts: TelnetOptions): Promise<void> => {
   log('opening connection');
 
   try {
+    connection = new Telnet();
     await connection.connect(options);
   } catch (ex: unknown) {
     log(ex);

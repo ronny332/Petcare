@@ -4,4 +4,6 @@ interface FlapStateCache {
   current: FlapState | null;
 }
 
-export { FlapState, FlapStateCache };
+type FlapStateUpdateSource = 'alexa' | 'fhem' | 'flap' | 'server';
+
+export { FlapState, FlapStateCache, FlapStateUpdateSource };

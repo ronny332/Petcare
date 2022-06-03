@@ -2,7 +2,7 @@
   "fhem": {
     "deviceAlexa": "dum_alexa_flap",
     "deviceFhem": "dum_cat_flap",
-    "deviceOnlineStatus": "dum_alexa_flap",
+    "deviceStatus": "dum_alexa_flap",
     "telnet": {
       "host": "192.2.1.27",
       "port": 7072

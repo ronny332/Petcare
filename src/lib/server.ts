@@ -1,13 +1,12 @@
 import { config } from './config.js';
 import { FlapState } from './types/FlapState.js';
+import lodash from 'lodash';
 import { server as log } from './log.js';
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import * as fhem from './fhem.js';
 import * as flapDevice from './flapDevice.js';
 import * as flapState from './flapState.js';
 import * as position from './flapPosition.js';
-
-const app = express();
 
 const resError = {
   error: {
@@ -15,7 +14,21 @@ const resError = {
   },
 };
 
+const logQuery = (req: Request, _: Response, next: NextFunction): void => {
+  let msg = `${req.method.toUpperCase()}: ${req.path}`;
+
+  if (!lodash.isEmpty(req.query) && lodash.isPlainObject(req.query)) {
+    msg += `?${lodash.map(req.query, (val: string, key: string) => `${key}=${val}`).join('&')}`;
+  }
+
+  log(msg);
+  next();
+};
+
+const app = express();
+
 app.use(express.json());
+app.use(logQuery);
 
 app.get('/flap/device/online', async (req, res) => {
   try {
@@ -56,14 +69,15 @@ app.post(
 
       res.json({ flap });
 
-      flapState.skipNextUpdate();
-      await position.setPosition(flap);
+      const skipUpdate = req.query.skipUpdate as string;
 
-      const skipUpdate =
-        'skipUpdate' in req.query && req.query.skipUpdate === '1';
+      if (!fhem.skipUpdate('fhem', skipUpdate)) {
+        await fhem.setState(flap, 'server');
+      }
 
-      if (!skipUpdate && config.server.updateFhem) {
-        await fhem.setState(flap);
+      if (!fhem.skipUpdate('flap', skipUpdate)) {
+        flapState.skipNextUpdate();
+        await position.setPosition(flap);
       }
     } catch (ex: unknown) {
       if (!res.headersSent) {
