@@ -60,19 +60,23 @@ const setDeviceStatus = async (device: FlapStatus | null): Promise<void> => {
   }
 };
 
-const setOnlineStatus = async (online: FlapStatusOnlineState): Promise<void> => {
+const setOnlineStatus = async (online: FlapStatusOnlineState, updateAnyway = false): Promise<void> => {
   if (isUpdateActive()) {
     return;
   }
 
   try {
-    const res = await telnet.exec(`{ReadingsVal("${config.fhem.deviceStatus}","online","0")}`);
+    let curStatus: FlapStatusOnlineState = null;
 
-    if (res === null) {
-      return;
+    if (updateAnyway) {
+      const res = await telnet.exec(`{ReadingsVal("${config.fhem.deviceStatus}","online","0")}`);
+
+      if (res === null) {
+        return;
+      }
+
+      curStatus = res.trim() === '1';
     }
-
-    const curStatus = res.trim() === '1';
 
     if (curStatus !== online) {
       log(`online status update ${online ? 'online' : 'offline'}`);
