@@ -33,8 +33,8 @@ const config: Config = {
           retry: 300_000
         },
         online: {
-          interval: 30_000,
-          retry: 30_000
+          interval: 60_000,
+          retry: 60_000
         }
       }
     },

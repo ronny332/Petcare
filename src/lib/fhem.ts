@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { fhem as log } from './log.js';
+import { wait } from './utils.js';
 import { FlapState, FlapStateUpdateSource } from './types/FlapState.js';
 import { FlapStatus, FlapStatusOnlineState } from './types/FlapDevice.js';
 import * as telnet from './telnet.js';
@@ -20,14 +21,13 @@ const getSkipUpdatePhrase = (src: FlapStateUpdateSource): string => {
 };
 
 const isUpdateActive = (): boolean => config.fhem.updateEnabled;
-const telnetOptions = telnet.createOptions(config.fhem.telnet);
+
+telnet.setOptions(telnet.createOptions(config.fhem.telnet));
 
 const setDeviceStatus = async (device: FlapStatus | null): Promise<void> => {
   if (isUpdateActive() || device === null) {
     return;
   }
-
-  await telnet.open(telnetOptions);
 
   try {
     await telnet.exec(`setreading ${config.fhem.deviceFhem} battery ${device.status.battery > 5 ? 'ok' : 'low'}`);
@@ -58,16 +58,12 @@ const setDeviceStatus = async (device: FlapStatus | null): Promise<void> => {
     log(ex);
     throw new Error('device status update failed');
   }
-
-  await telnet.end(false);
 };
 
 const setOnlineStatus = async (online: FlapStatusOnlineState): Promise<void> => {
   if (isUpdateActive()) {
     return;
   }
-
-  await telnet.open(telnetOptions);
 
   try {
     const res = await telnet.exec(`{ReadingsVal("${config.fhem.deviceStatus}","online","0")}`);
@@ -87,16 +83,12 @@ const setOnlineStatus = async (online: FlapStatusOnlineState): Promise<void> => 
     log(ex);
     throw new Error('online status update failed');
   }
-
-  await telnet.end(false);
 };
 
 const setState = async (flap: FlapState, src: FlapStateUpdateSource): Promise<void> => {
   if (isUpdateActive()) {
     return;
   }
-
-  await telnet.open(telnetOptions);
 
   try {
     const curFlap = await telnet.exec(`{Value("${config.fhem.deviceAlexa}")}`);
@@ -111,6 +103,7 @@ const setState = async (flap: FlapState, src: FlapStateUpdateSource): Promise<vo
       const skipUpdate = getSkipUpdatePhrase(src);
 
       await telnet.exec(`setreading ${config.fhem.deviceFhem} skipUpdate ${skipUpdate}`);
+      await wait(1_000);
       await telnet.exec(`set ${config.fhem.deviceAlexa} ${flap}`);
 
       return;
@@ -121,14 +114,12 @@ const setState = async (flap: FlapState, src: FlapStateUpdateSource): Promise<vo
     log(ex);
     throw new Error('state update failed');
   }
-
-  await telnet.end(false);
 };
 
 const skipUpdate = (skip: FlapStateUpdateSource, skipUpdates: string): boolean => {
   const values: string[] = typeof skipUpdates === 'string' && skipUpdates.trim() !== '' ? skipUpdates.split(',') : [];
 
-  return skip in values;
+  return values.includes(skip);
 };
 
 export { setDeviceStatus, setOnlineStatus, setState, skipUpdate };

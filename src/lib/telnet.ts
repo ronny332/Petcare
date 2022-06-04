@@ -1,19 +1,14 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair
 /* eslint-disable @typescript-eslint/no-use-before-define */
+import { config } from './config.js';
 import lodash from 'lodash';
 import { telnet as log } from './log.js';
+import { Mutex } from 'async-mutex';
 import { Telnet } from 'telnet-client';
 import { TelnetOptions, TelnetOptionsDefault } from './types/Telnet.js';
 
-interface Command {
-  cmd: string;
-  promise: Promise<string | null> | null;
-  resolve: ((value: string | null | PromiseLike<string | null>) => void) | null;
-  reject: ((reason?: any) => void) | null;
-}
-
-const commands: Command[] = [];
 let connection: Telnet = new Telnet();
+const mutex = new Mutex();
 
 const telnetDefaultOptions: TelnetOptionsDefault = {
   echoLines: 0,
@@ -23,43 +18,12 @@ const telnetDefaultOptions: TelnetOptionsDefault = {
   timeout: 10_000,
 };
 
+let telnetOptions: TelnetOptions | null = null;
+
 const createOptions = (opts: TelnetOptions): TelnetOptions => lodash.merge({ ...telnetDefaultOptions }, opts);
 
-const cycle = async (): Promise<void> => {
-  const removed: Command[] = [];
-
-  for (const command of commands) {
-    if (!isOpen()) {
-      return;
-    }
-    try {
-      log('running command', command.cmd);
-
-      const result = (await connection.exec(command.cmd)).trim();
-
-      if (command.resolve) {
-        log('command result', result);
-        command.resolve(result);
-        removed.push(command);
-      }
-    } catch (ex: unknown) {
-      log(ex);
-      if (command.reject) {
-        command.reject(new Error('cmd execution failed'));
-      }
-    }
-  }
-
-  if (removed.length > 0) {
-    for (const command of removed) {
-      const index = commands.indexOf(command);
-
-      if (index >= 0) {
-        log('removing cmd from queue', command.cmd);
-        commands.splice(index, 1);
-      }
-    }
-  }
+const setOptions = (opts: TelnetOptions): void => {
+  telnetOptions = opts;
 };
 
 let endTimeout: ReturnType<typeof setInterval> | null = null;
@@ -71,51 +35,53 @@ const end = async (force: boolean): Promise<void> => {
   }
 
   endTimeout = setTimeout(async () => {
-    try {
-      log('closing connection');
-      await connection.end();
+    const release = await mutex.acquire();
 
-      if (force) {
-        await connection.destroy();
+    try {
+      try {
+        log('closing connection');
+        await connection.end();
+
+        if (force) {
+          await connection.destroy();
+        }
+      } catch (ex: unknown) {
+        log(ex);
+      } finally {
         connection = new Telnet();
       }
-    } catch (ex: unknown) {
-      log(ex);
+    } finally {
+      release();
     }
   }, 2_500);
 };
 
 const exec = async (cmd: string): Promise<string | null> => {
-  log('queuing command', cmd);
+  const release = await mutex.acquire();
+
+  await end(false);
 
   try {
-    if (isOpen()) {
-      const command: Command = {
-        cmd,
-        promise: null,
-        resolve: null,
-        reject: null,
-      };
+    try {
+      if (!isOpen()) {
+        await open();
+      }
 
-      command.promise = new Promise((resolve, reject) => {
-        command.resolve = resolve;
-        command.reject = reject;
-      });
+      log('running command', cmd);
 
-      commands.push(command);
+      const result = (await connection.exec(cmd)).replace(config.fhem.telnet.shellPrompt!, '').trim();
 
-      setImmediate(async () => {
-        await cycle();
-      });
+      log('command result', result);
 
-      return command.promise;
+      return result;
+    } catch (ex: unknown) {
+      log(ex);
+
+      throw new Error('command execution failed');
     }
-  } catch (ex: unknown) {
-    log(ex);
-    throw new Error('FHEM command execution failed');
+  } finally {
+    release();
   }
-
-  return null;
 };
 
 const isOpen = (): boolean => {
@@ -124,22 +90,22 @@ const isOpen = (): boolean => {
   return Boolean(socket) && socket.readyState === 'open';
 };
 
-const open = async (opts: TelnetOptions): Promise<void> => {
-  if (isOpen()) {
-    return;
-  }
-
-  const options = createOptions(opts);
-
-  log('opening connection');
-
+const open = async (): Promise<void> => {
   try {
-    connection = new Telnet();
-    await connection.connect(options);
+    if (!isOpen()) {
+      log('opening connection');
+
+      try {
+        connection = new Telnet();
+        await connection.connect(telnetOptions);
+      } catch (ex: unknown) {
+        log(ex);
+        await end(true);
+      }
+    }
   } catch (ex: unknown) {
     log(ex);
-    await end(true);
   }
 };
 
-export { createOptions, end, exec, isOpen, open };
+export { createOptions, exec, setOptions };

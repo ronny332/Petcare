@@ -72,7 +72,7 @@ const getState = async (cached: boolean): Promise<FlapState> => {
   }
 };
 
-const singleUpdate = async (): Promise<void> =>
+const runUpdate = async (): Promise<void> =>
   fhem.setState(await getState(false), 'flap');
 
 const skipNextUpdate = (): void => {
@@ -81,6 +81,6 @@ const skipNextUpdate = (): void => {
 
 const skipsNextUpdate = (): boolean => intervalOptions.skip;
 
-const startUpdating = async (): Promise<void> => startInterval(singleUpdate, intervalOptions);
+const startUpdating = async (): Promise<void> => startInterval(runUpdate, intervalOptions);
 
 export { getState, skipNextUpdate, skipsNextUpdate, startUpdating };

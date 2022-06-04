@@ -2,5 +2,6 @@
 dist
 node_modules
 config.user.json
+package-lock.json
 tsconfig.tsbuildinfo
 test.*

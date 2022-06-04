@@ -1,7 +1,7 @@
 #!/bin/bash
 CWD=`dirname $0`
-SLEEP=30
+SLEEP=1
 echo "waiting ${SLEEP}s for first connection to FHEM"
 sleep $SLEEP
-cd "${CWD}/server/dist"
-node index.js
+cd "${CWD}/"
+DEBUG=petcare:* npm start > /opt/fhem/log/Petcare.log 2>&1
