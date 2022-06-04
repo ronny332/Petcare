@@ -1,0 +1,9 @@
+defmod dum_alexa_flap_alexa dummy
+attr dum_alexa_flap_alexa alexaProactiveEvents 1
+attr dum_alexa_flap_alexa alexaRoom Basement
+attr dum_alexa_flap_alexa alexaName Cat Flap Alexa
+attr dum_alexa_flap_alexa event-on-change-reading .*
+attr dum_alexa_flap_alexa genericDeviceType blind
+attr dum_alexa_flap_alexa group Flap
+attr dum_alexa_flap_alexa readingList pct
+attr dum_alexa_flap_alexa room Alexa,devices->dummy

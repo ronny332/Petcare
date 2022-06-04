@@ -1,0 +1,16 @@
+dum_cat_flap:(open|closed) {
+	my $name_cat_flap = "dum_cat_flap";
+	my $hash_cat_flap = $defs{$name_cat_flap};
+
+	my $skipUpdate = ReadingsVal($hash_cat_flap, "skipUpdate", "fhem");
+	my $query = "?skipUpdate=$skipUpdate";
+
+	if ($EVTPART0 eq "open") {
+		GetFileFromURL("http://127.0.0.1:6924/flap/state/open$query",5,"no-content");
+	}
+	elsif ($EVTPART0 eq "closed") {
+		GetFileFromURL("http://127.0.0.1:6924/flap/state/closed$query",5,"no-content");
+	}
+
+	readingsSingleUpdate($hash_cat_flap, "skipUpdate", "", 1);
+}

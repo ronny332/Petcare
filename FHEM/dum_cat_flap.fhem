@@ -1,0 +1,10 @@
+defmod dum_cat_flap dummy
+attr dum_cat_flap alexaName CatFlap
+attr dum_cat_flap alexaProactiveEvents 1
+attr dum_cat_flap alexaRoom Basement
+attr dum_cat_flap event-on-change-reading .*
+attr dum_cat_flap genericDeviceType contact
+attr dum_cat_flap group Flap
+attr dum_cat_flap homebridgeMapping ContactSensorState=state,values=closed:CONTACT_DETECTED;;open:CONTACT_NOT_DETECTED
+attr dum_cat_flap room Alexa,devices->dummy
+attr dum_cat_flap timestamp-on-change-reading device.*

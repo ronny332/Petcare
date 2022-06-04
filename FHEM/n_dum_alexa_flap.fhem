@@ -1,0 +1,33 @@
+dum_alexa_cat:(open|closed|pct).* {
+	my $name_flap = "dum_alexa_cat";
+	my $name_alexa_flap = "dum_alexa_cat";
+
+	my $hash_flap = $defs{$name_flap};
+	my $hash_flap_alexa = $defs{$name_alexa_flap};
+	
+	my @EVTPARTS = split(/: /, $EVENT);
+	
+	if ($EVTPARTS[0] eq "open" or $EVTPARTS[0] eq "closed") {
+		if ($EVTPARTS[0] eq "open") {
+			readingsSingleUpdate($hash_flap, "state", "open", 1);
+			readingsSingleUpdate($hash_flap_alexa, "pct", "100", 0);
+		}
+
+		if ($EVTPARTS[0] eq "closed") {
+			readingsSingleUpdate($hash_flap, "state", "closed", 1);
+			readingsSingleUpdate($hash_flap_alexa, "pct", "0", 0);
+		}
+	}
+	elsif ($EVTPARTS[0] eq "pct") {
+		readingsSingleUpdate($hash_flap, "skipUpdate", "fhem", 0);
+
+		if ($EVTPARTS[1] eq "0") {
+			readingsSingleUpdate($hash_flap, "state", "closed", 1);
+			readingsSingleUpdate($hash_flap_alexa, "state", "closed", 0);
+		}
+		elsif ($EVTPARTS[1] eq "100") {
+			readingsSingleUpdate($hash_flap, "state", "open", 1);
+			readingsSingleUpdate($hash_flap_alexa, "state", "open", 0);
+		}
+	}
+}

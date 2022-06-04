@@ -1,0 +1,12 @@
+dum_cat_flap:online {
+    my $online = ReadingsVal("dum_cat_flap", "online", "0");
+    my $status = "offline";
+
+    if ($status eq "1") {
+        $status = "online";
+    }
+
+    my $msg = "flap is $status";
+
+    fhem("set telegram_bot message $msg");
+}
