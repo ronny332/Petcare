@@ -19,4 +19,4 @@ As my flap goes offline one of two times a month (have to reset the batteries to
 
 For now this fulfills my needs. Updates and fixes will follow for sure.
 
-![FHEM readings for flap device](https://raw.githubusercontent.com/ronny332/Petcare/master/README.png)
+![FHEM readings for flap device](https://github.com/ronny332/Petcare/blob/master/doc/fhem_readings.png?raw=true)
