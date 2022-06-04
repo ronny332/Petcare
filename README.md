@@ -19,4 +19,13 @@ As my flap goes offline one of two times a month (have to reset the batteries to
 
 For now this fulfills my needs. Updates and fixes will follow for sure.
 
+## to get started (incomplete)
+
+* *some a bit advanced needs* at first: visit [https://surehub.io/](https://surehub.io/), log in and get the `device_id`, `household_id` and the `pet_id` from the API JSON requests (e.g. with Chrome Developer Tools)
+* make a copy of `config.default.json` to `config.user.json` and modify it by your needs
+* create the needed `dummy` devices and `notifiers` at your FHEM instance (check the [FHEM]([FHEM](https://github.com/ronny332/Petcare/tree/master/FHEM)) folder of this repo)
+* `npm install`
+* `npm run build`
+* `npm start` (debug is supported, so `DEBUG=petcare:* npm start` also works fine)
+
 ![FHEM readings for flap device](https://github.com/ronny332/Petcare/blob/master/FHEM/fhem_readings.png?raw=true)
