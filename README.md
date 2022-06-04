@@ -27,5 +27,7 @@ For now this fulfills my needs. Updates and fixes will follow for sure.
 * `npm install`
 * `npm run build`
 * `npm start` (debug is supported, so `DEBUG=petcare:* npm start` also works fine)
+* ...
 
+### FHEM flap device view
 ![FHEM readings for flap device](https://github.com/ronny332/Petcare/blob/master/FHEM/fhem_readings.png?raw=true)
