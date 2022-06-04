@@ -18,8 +18,9 @@ const get = (cb: Callback): Interval | null =>
 const clear = (interval: Interval): void => {
   if (interval.interval !== null) {
     clearInterval(interval.interval);
-    intervals.splice(intervals.indexOf(interval), 1);
   }
+
+  intervals.splice(intervals.indexOf(interval), 1);
 };
 
 const set = (cb: Callback, opts: IntervalOptions): Interval => {
@@ -71,7 +72,7 @@ const create = async (cb: Callback, opts: IntervalOptions): Promise<void> => {
   let interval = get(cb);
 
   if (interval !== null) {
-    log('clear interval');
+    log('clearing old interval');
     clear(interval);
   }
 

@@ -83,9 +83,13 @@ const getDeviceOnlineStatus = async (cached: boolean): Promise<FlapStatusOnlineS
   return status?.status.online ?? null;
 };
 
-const runUpdateDeviceStatus = async (): Promise<void> => fhem.setDeviceStatus(await getDeviceStatus(true));
+const runUpdateDeviceStatus = async (): Promise<void> => {
+  await fhem.setDeviceStatus(await getDeviceStatus(true));
+};
 
-const runUpdateOnlineStatus = async (): Promise<void> => fhem.setOnlineStatus(await getDeviceOnlineStatus(true));
+const runUpdateOnlineStatus = async (): Promise<void> => {
+  await fhem.setOnlineStatus(await getDeviceOnlineStatus(true));
+};
 
 const startUpdatingDeviceStatus = async (): Promise<void> => startInterval(runUpdateDeviceStatus, intervalOptionsDeviceStatus);
 

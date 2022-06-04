@@ -5,9 +5,11 @@ import lodash from 'lodash';
 import { telnet as log } from './log.js';
 import { Mutex } from 'async-mutex';
 import { Telnet } from 'telnet-client';
+import { wait } from './utils.js';
+import { Socket, SocketReadyState } from 'node:net';
 import { TelnetOptions, TelnetOptionsDefault } from './types/Telnet.js';
 
-let connection: Telnet = new Telnet();
+let connection: Telnet | undefined = new Telnet();
 const mutex = new Mutex();
 
 const telnetDefaultOptions: TelnetOptionsDefault = {
@@ -20,30 +22,42 @@ const telnetDefaultOptions: TelnetOptionsDefault = {
 
 let telnetOptions: TelnetOptions | null = null;
 
-const createOptions = (opts: TelnetOptions): TelnetOptions => lodash.merge({ ...telnetDefaultOptions }, opts);
+let closeTimeout: ReturnType<typeof setInterval> | null = null;
 
-const setOptions = (opts: TelnetOptions): void => {
-  telnetOptions = opts;
+const clean = async (): Promise<void> => {
+  try {
+    if (connection !== undefined && typeof connection.getSocket === 'function') {
+      const socket = connection.getSocket() as Socket | undefined;
+
+      if (socket !== undefined && !socket.destroyed) {
+        socket.destroy();
+      }
+    }
+  } catch (ex: unknown) {
+    log(ex);
+  }
 };
 
-let endTimeout: ReturnType<typeof setInterval> | null = null;
-
-const end = async (force: boolean): Promise<void> => {
-  if (endTimeout) {
-    clearInterval(endTimeout);
-    endTimeout = null;
+const close = async (force: boolean): Promise<void> => {
+  if (closeTimeout) {
+    clearInterval(closeTimeout);
+    closeTimeout = null;
   }
 
-  endTimeout = setTimeout(async () => {
+  closeTimeout = setTimeout(async () => {
+    if (!await isOpen()) {
+      return;
+    }
+
     const release = await mutex.acquire();
 
     try {
       try {
         log('closing connection');
-        await connection.end();
+        await connection?.end();
 
         if (force) {
-          await connection.destroy();
+          await clean();
         }
       } catch (ex: unknown) {
         log(ex);
@@ -53,23 +67,31 @@ const end = async (force: boolean): Promise<void> => {
     } finally {
       release();
     }
-  }, 2_500);
+  }, force ? 0 : 2_500);
+};
+
+const createOptions = (opts: TelnetOptions): TelnetOptions => lodash.merge({ ...telnetDefaultOptions }, opts);
+
+const setOptions = (opts: TelnetOptions): void => {
+  telnetOptions = opts;
 };
 
 const exec = async (cmd: string): Promise<string | null> => {
-  const release = await mutex.acquire();
+  await close(false);
 
-  await end(false);
+  const release = await mutex.acquire();
 
   try {
     try {
-      if (!isOpen()) {
+      if (!await isOpen()) {
         await open();
       }
 
       log('running command', cmd);
 
-      const result = (await connection.exec(cmd)).replace(config.fhem.telnet.shellPrompt!, '').trim();
+      const result = (await connection?.exec(cmd) ?? '').
+        replace(config.fhem.telnet.shellPrompt!, '').
+        trim();
 
       log('command result', result);
 
@@ -84,27 +106,60 @@ const exec = async (cmd: string): Promise<string | null> => {
   }
 };
 
-const isOpen = (): boolean => {
-  const socket = connection.getSocket();
+const getOpenState = async (): Promise<SocketReadyState> => {
+  if (connection !== undefined) {
+    const socket = connection.getSocket() as Socket | undefined;
 
-  return Boolean(socket) && socket.readyState === 'open';
+    if (socket) {
+      return socket.readyState;
+    }
+  }
+
+  return 'closed';
+};
+
+const isOpen = async (): Promise<boolean> => {
+  let state = await getOpenState();
+
+  if (state === 'open') {
+    return true;
+  }
+
+  if (state === 'opening') {
+    for (let i = 0; i < 10; i++) {
+      await wait(250);
+      state = await getOpenState();
+
+      if (state === 'open') {
+        return true;
+      }
+    }
+  }
+
+  await clean();
+
+  return false;
 };
 
 const open = async (): Promise<void> => {
-  try {
-    if (!isOpen()) {
-      log('opening connection');
+  if (await isOpen()) {
+    return;
+  }
+  log('opening connection');
 
-      try {
-        connection = new Telnet();
-        await connection.connect(telnetOptions);
-      } catch (ex: unknown) {
-        log(ex);
-        await end(true);
-      }
-    }
+  try {
+    connection = new Telnet();
+    await connection.connect(telnetOptions);
   } catch (ex: unknown) {
     log(ex);
+    await close(true);
+
+    const retry = 2_000;
+
+    log(`connection failed, delaying by ${retry}ms`);
+    await wait(retry);
+
+    throw new Error('connection failed, allowing new connection');
   }
 };
 
