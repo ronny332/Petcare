@@ -4,12 +4,12 @@ import { config } from './config.js';
 import lodash from 'lodash';
 import { telnet as log } from './log.js';
 import { Mutex } from 'async-mutex';
+import { SocketReadyState } from 'node:net';
 import { Telnet } from 'telnet-client';
 import { wait } from './utils.js';
-import { Socket, SocketReadyState } from 'node:net';
 import { TelnetOptions, TelnetOptionsDefault } from './types/Telnet.js';
 
-let connection: Telnet | undefined = new Telnet();
+let connection: Telnet = new Telnet();
 const mutex = new Mutex();
 
 const telnetDefaultOptions: TelnetOptionsDefault = {
@@ -26,12 +26,10 @@ let closeTimeout: ReturnType<typeof setInterval> | null = null;
 
 const clean = async (): Promise<void> => {
   try {
-    if (connection !== undefined && typeof connection.getSocket === 'function') {
-      const socket = connection.getSocket() as Socket | undefined;
+    const socket = connection.getSocket();
 
-      if (socket !== undefined && !socket.destroyed) {
-        socket.destroy();
-      }
+    if (socket !== null && !socket.destroyed) {
+      socket.destroy();
     }
   } catch (ex: unknown) {
     log(ex);
@@ -54,7 +52,7 @@ const close = async (force: boolean): Promise<void> => {
     try {
       try {
         log('closing connection');
-        await connection?.end();
+        await connection.end();
 
         if (force) {
           await clean();
@@ -89,7 +87,7 @@ const exec = async (cmd: string): Promise<string | null> => {
 
       log('running command', cmd);
 
-      const result = (await connection?.exec(cmd) ?? '').
+      const result = (await connection.exec(cmd)).
         replace(config.fhem.telnet.shellPrompt!, '').
         trim();
 
@@ -107,12 +105,10 @@ const exec = async (cmd: string): Promise<string | null> => {
 };
 
 const getOpenState = async (): Promise<SocketReadyState> => {
-  if (connection !== undefined) {
-    const socket = connection.getSocket() as Socket | undefined;
+  const socket = connection.getSocket();
 
-    if (socket) {
-      return socket.readyState;
-    }
+  if (socket) {
+    return socket.readyState;
   }
 
   return 'closed';
